@@ -1,25 +1,29 @@
 mod task;
 mod shell;
 
-use std::io::{stdin, stdout, Write};
+use std::io::{self, stdin, stdout, BufReader, prelude::*};
+use task::Task;
 
-fn main() {
+const PROMPT: &str = ": ";
+
+fn prompt() -> io::Result<()> {
+    let mut stdout = stdout();
+
+    stdout.write_all(PROMPT.as_bytes())?;
+    stdout.flush()?;
+
+    Ok(())
+}
+
+fn main() -> io::Result<()> {
     let mut shell = shell::Shell::new();
-    let mut user_input = String::new();
+    let stdin = stdin();
 
-    loop {
-        print!(": ");
-        stdout().flush().unwrap();
-        user_input.clear();
-
-        stdin().read_line(&mut user_input).unwrap();
-
-        let task = if user_input.is_empty() { // EOF
-            task::Task::Exit
-        } else {
-            user_input.as_str().trim().parse().unwrap()
-        };
-
-        shell.run(task);
+    prompt()?;
+    for line in BufReader::new(stdin.lock()).lines() {
+        shell.run(line?.into());
+        prompt()?;
     }
+
+    Ok(())
 }
